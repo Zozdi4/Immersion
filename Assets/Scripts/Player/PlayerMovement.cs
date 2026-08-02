@@ -1,142 +1,131 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class PlayerMovement : MonoBehaviour
 {
-    private PlayerData player_data;
-    private CharacterController player;
-    private Vector2 move_direction;
-    private Vector2 camera_direction;
-    private float sprint;
-    private float jump;
-    private bool is_crouching;
-    private float interact;
-    private float attack;
-    private float _verticalVelocity;
-    private GameObject player_gameobject;
-    private Quaternion rotation;
-    private Camera player_camera;
-    private Animator animator;
-
+    private InitPlayerData _player_data;
+    private CharacterController _player;
+    private Vector2 _move_direction;
+    private Vector2 _camera_direction;
+    private bool _sprint;
+    private bool _jump;
+    private float _vertical_velocity;
+    private GameObject _player_gameobject;
+    private Quaternion _rotation;
+    private Camera _player_camera;
+    private Animator _animator;
     void Start()
     {
-        player                     = gameObject.GetComponentInParent<CharacterController>();
-        player_data                = gameObject.AddComponent<PlayerData>();
-        player_data.speed          = 10f;
-        player_data.health         = 100;
-        player_data.damage         = 5;
-        player_data.max_health     = 100;
-        player_data.block_movement = false;
-        player_gameobject          = gameObject.transform.parent.gameObject;
-        rotation                   = player_gameobject.transform.localRotation;
-        player_camera              = player_gameobject.GetComponentInChildren<Camera>();
-        animator                   = player_gameobject.GetComponent<Animator>();
+        _player_data = gameObject.GetComponent<InitPlayerData>();
+        _player = gameObject.GetComponentInParent<CharacterController>();
+        _player_gameobject = gameObject.transform.parent.gameObject;
+        _rotation = _player_gameobject.transform.localRotation;
+        _player_camera = _player_gameobject.GetComponentInChildren<Camera>();
+        _animator = _player_gameobject.GetComponent<Animator>();
     }
 
     public void Move(InputAction.CallbackContext Action)
     {
-        move_direction = Action.ReadValue<Vector2>();
+        _move_direction = Action.ReadValue<Vector2>();
     }
 
     public void Look(InputAction.CallbackContext Action)
     {
-        if (!player_data.block_movement)
-            camera_direction = Action.ReadValue<Vector2>();
+        if (!_player_data.Block_movement)
+            _camera_direction = Action.ReadValue<Vector2>();
     }
     public void Sprint(InputAction.CallbackContext Action)
     {
-        sprint = Action.ReadValue<float>();
+        _sprint = System.Convert.ToBoolean(Action.ReadValue<float>());
     }
     public void Jump(InputAction.CallbackContext Action)
     {
-        jump = Action.ReadValue<float>();
-    }
-    public void Attack(InputAction.CallbackContext Action)
-    {
-        attack = Action.ReadValue<float>();
-    }
-    public void Interact(InputAction.CallbackContext Action)
-    {
-        interact = Action.ReadValue<float>();
+        _jump = System.Convert.ToBoolean(Action.ReadValue<float>());
     }
 
     public void Crouch(InputAction.CallbackContext Action)
     {
-        if (!player_data.block_movement)
+        if (!_player_data.Block_movement)
             if (Action.started)
-                is_crouching = true;
+                _player_data.Is_Crouching = true;
             else if (Action.canceled)
-                is_crouching = false;
+                _player_data.Is_Crouching = false;
     }
 
     void Update()
     {
         // Crouch
-        animator.SetBool("Crouch", is_crouching);
-        animator.SetBool("Walk", move_direction != Vector2.zero);
-        if (is_crouching)
+        _animator.SetBool("Crouch", _player_data.Is_Crouching);
+        _animator.SetBool("Walk", _move_direction != Vector2.zero);
+
+        Vector3 _crouch_center_smooth;
+        float _crouch_height_smooth;
+        float _crouch_speed;
+        if (_player_data.Is_Crouching)
         {
-            player.center = Vector3.Lerp(player.center, new Vector3(0f, 0.09f, 0f), Time.deltaTime * 30f);
-            player.height = Mathf.Lerp(player.height, 1f, Time.deltaTime * 10f);
-            player_data.speed = 2f;
+            _crouch_center_smooth = new Vector3(0f, -0.09f, 0f);
+            _crouch_height_smooth = 1f;
+            _crouch_speed         = 2f;
         }
         else
-        { 
-            player.center = Vector3.Lerp(player.center, new Vector3(0f, -0.19f, 0f), Time.deltaTime * 30f);
-            player.height = Mathf.Lerp(player.height, 2.24f, Time.deltaTime * 10f);
-            player_data.speed = 5f;
+        {
+            _crouch_center_smooth = new Vector3(0f, -0.19f, 0f);
+            _crouch_height_smooth = 2.24f;
+            _crouch_speed         = 5f;
+            
         }
+        _player.center     = Vector3.Lerp(_player.center, _crouch_center_smooth, Time.deltaTime * 30f);
+        _player.height     = Mathf.Lerp(_player.height, _crouch_height_smooth, Time.deltaTime * 10f);
+        _player_data.Speed = _crouch_speed;
 
         // Camera
-        rotation.y += camera_direction.x * 3f * 5f * Time.deltaTime;
-        rotation.x -= camera_direction.y * 1f * 5f * Time.deltaTime;
-        rotation.x = Mathf.Clamp(rotation.x, -75f, 60f);
+        _rotation.y += _camera_direction.x * 3f * 5f * Time.deltaTime;
+        _rotation.x -= _camera_direction.y * 1f * 5f * Time.deltaTime;
+        _rotation.x = Mathf.Clamp(_rotation.x, -75f, 60f);
 
-        if (!player_data.block_movement)
+        if (!_player_data.Block_movement)
         {
             if (!float.IsNaN(transform.localRotation.z))
-                player_gameobject.transform.localRotation = Quaternion.Euler(0f, rotation.y, 0f);
-            if (!float.IsNaN(player_camera.transform.localRotation.z))
-                player_camera.transform.localRotation = Quaternion.Euler(rotation.x, 0f, 0f);
+                _player_gameobject.transform.localRotation = Quaternion.Euler(0f, _rotation.y, 0f);
+            if (!float.IsNaN(_player_camera.transform.localRotation.z))
+                _player_camera.transform.localRotation = Quaternion.Euler(_rotation.x, 0f, 0f);
         }
 
         // Jump
-        if (player.isGrounded)
+        if (_player.isGrounded)
         {
-            if (_verticalVelocity < 0)
-                _verticalVelocity = -2f;
+            if (_vertical_velocity < 0)
+                _vertical_velocity = -2f;
 
-            if (jump != 0f)
-                _verticalVelocity = Mathf.Sqrt(5f * 2f * Mathf.Abs(-25f));
+            if (_jump)
+                _vertical_velocity = Mathf.Sqrt(5f * 2f * Mathf.Abs(-25f));
         }
         else
         {
-            _verticalVelocity += -25f * Time.deltaTime;
+            _vertical_velocity += -25f * Time.deltaTime;
 
-            if (!player.isGrounded && jump != 0f && Time.timeSinceLevelLoad > 2f)
+            if (!_player.isGrounded && _jump && Time.timeSinceLevelLoad > 2f)
             {
                 RaycastHit hit;
                 if (Physics.Raycast(transform.position, Vector3.down, out hit, 100f))
                 {
 
-                    if (hit.distance > 10f && _verticalVelocity > -1f)
-                        _verticalVelocity = Mathf.Min(_verticalVelocity, -20f);
+                    if (hit.distance > 10f && _vertical_velocity > -1f)
+                        _vertical_velocity = Mathf.Min(_vertical_velocity, -20f);
                 }
             }
         }
 
         // Movement
-        Vector3 verticalMove = new Vector3(0f, _verticalVelocity, 0f) * Time.deltaTime;
+        Vector3 verticalMove = new Vector3(0f, _vertical_velocity, 0f) * Time.deltaTime;
         Vector3 finalMove;
-        if (!player_data.block_movement)
+        if (!_player_data.Block_movement)
         {
             Vector3 moveVector;
-            if (sprint != 0f)
-                moveVector = player_gameobject.transform.TransformDirection(new Vector3(move_direction.x, 0f, move_direction.y)) * player_data.speed * 2f * Time.deltaTime;
+            if (_sprint)
+                moveVector = _player_gameobject.transform.TransformDirection(new Vector3(_move_direction.x, 0f, _move_direction.y)) * _player_data.Speed * 2f * Time.deltaTime;
             else
-                moveVector = player_gameobject.transform.TransformDirection(new Vector3(move_direction.x, 0f, move_direction.y)) * player_data.speed * Time.deltaTime;
+                moveVector = _player_gameobject.transform.TransformDirection(new Vector3(_move_direction.x, 0f, _move_direction.y)) * _player_data.Speed * Time.deltaTime;
 
             finalMove = moveVector + verticalMove;
         }
@@ -145,7 +134,6 @@ public class PlayerMovement : MonoBehaviour
             finalMove = new Vector3(0f, 0f, 0f) + verticalMove;
         }
 
-
-        player.Move(finalMove);
+        _player.Move(finalMove);
     }
 }

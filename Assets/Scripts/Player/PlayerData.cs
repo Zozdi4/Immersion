@@ -1,11 +1,12 @@
 using UnityEngine;
 
-public class PlayerData : MonoBehaviour
+public interface IPlayerData
 {
-    public int health;
-    public int max_health;
-    public int damage;
-    public float speed;
-    public GameObject item_in_hand;
-    public bool block_movement;
+    int Health              { get; set; }
+    int Max_health          { get; set; }
+    int Damage              { get; set; }
+    float Speed             { get; set; }
+    GameObject Item_in_hand { get; set; }
+    bool Block_movement     { get; set; }
+    bool Is_Crouching       { get; set; }
 }
